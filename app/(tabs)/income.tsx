@@ -1,3 +1,4 @@
+import CategoryDropdown from '@/components/CategoryDropdown';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -24,6 +25,7 @@ export default function IncomeScreen() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const colorScheme = useColorScheme();
 
   const storage = ExpensesStorage.getInstance();
@@ -41,6 +43,11 @@ export default function IncomeScreen() {
     );
     const incomeOnly = allTransactions.filter(t => t.type === 'income');
     setIncomeTransactions(incomeOnly);
+    
+    // Load available categories for income
+    const categories = storage.getAllCategories('income');
+    setAvailableCategories(categories);
+    
     setIsLoading(false);
   };
 
@@ -73,6 +80,11 @@ export default function IncomeScreen() {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const handleAddCategory = async (newCategory: string) => {
+    // Add the new category to available categories
+    setAvailableCategories(prev => [...prev, newCategory].sort());
   };
 
   const handleAddIncome = async () => {
@@ -153,7 +165,7 @@ export default function IncomeScreen() {
   const renderTransaction = ({ item }: { item: Transaction }) => (
     <ThemedView style={styles.transactionItem}>
       <ThemedView style={styles.transactionLeft}>
-        <ThemedView style={[styles.transactionIcon, { backgroundColor: '#00aa00' }]}>
+        <ThemedView style={[styles.transactionIcon, { backgroundColor: '#10b981' }]}>
           <IconSymbol name="plus" size={16} color="white" />
         </ThemedView>
         <ThemedView style={styles.transactionDetails}>
@@ -166,7 +178,7 @@ export default function IncomeScreen() {
       </ThemedView>
       
       <ThemedView style={styles.transactionRight}>
-        <ThemedText style={[styles.transactionAmount, { color: '#00aa00' }]}>
+        <ThemedText style={[styles.transactionAmount, { color: '#10b981' }]}>
           +{formatCurrency(item.amount)}
         </ThemedText>
         <TouchableOpacity
@@ -183,14 +195,14 @@ export default function IncomeScreen() {
     <ThemedView style={styles.categoryItem}>
       <ThemedView style={styles.categoryLeft}>
         <ThemedView style={styles.categoryIcon}>
-          <IconSymbol name="folder" size={20} color="#00aa00" />
+          <IconSymbol name="folder" size={20} color="#10b981" />
         </ThemedView>
         <ThemedView style={styles.categoryDetails}>
           <ThemedText style={styles.categoryName}>{item.name}</ThemedText>
           <ThemedText style={styles.categoryCount}>{item.count} transaction{item.count !== 1 ? 's' : ''}</ThemedText>
         </ThemedView>
       </ThemedView>
-      <ThemedText style={[styles.categoryTotal, { color: '#00aa00' }]}>
+      <ThemedText style={[styles.categoryTotal, { color: '#10b981' }]}>
         {formatCurrency(item.total)}
       </ThemedText>
     </ThemedView>
@@ -207,7 +219,7 @@ export default function IncomeScreen() {
   const categories = getCategories();
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.header}>
         <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
           <IconSymbol name="chevron.left" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -224,7 +236,7 @@ export default function IncomeScreen() {
 
       <ThemedView style={styles.summaryCard}>
         <ThemedText style={styles.summaryLabel}>Total Income</ThemedText>
-        <ThemedText style={[styles.summaryAmount, { color: '#00aa00' }]}>
+        <ThemedText style={[styles.summaryAmount, { color: '#10b981' }]}>
           {formatCurrency(getTotalIncome())}
         </ThemedText>
       </ThemedView>
@@ -256,11 +268,13 @@ export default function IncomeScreen() {
 
           <ThemedView style={styles.inputGroup}>
             <ThemedText style={styles.label}>Category</ThemedText>
-            <TextInput
-              style={styles.input}
+            <CategoryDropdown
               value={category}
-              onChangeText={setCategory}
+              onValueChange={setCategory}
               placeholder="e.g., Salary, Freelance, Business"
+              categories={availableCategories}
+              onAddCategory={handleAddCategory}
+              type="income"
             />
           </ThemedView>
 
@@ -277,7 +291,7 @@ export default function IncomeScreen() {
           </ThemedView>
 
           <TouchableOpacity
-            style={[styles.submitButton, { backgroundColor: '#00aa00' }]}
+            style={[styles.submitButton, { backgroundColor: '#10b981' }]}
             onPress={handleAddIncome}
             disabled={isSubmitting}
           >
@@ -326,112 +340,177 @@ export default function IncomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: '#000000',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    paddingHorizontal: 8,
+    marginBottom: 32,
+    paddingHorizontal: 4,
   },
   navButton: {
-    padding: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1a1a1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   monthTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: -0.5,
   },
   summaryCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 24,
+    padding: 32,
+    marginBottom: 24,
     alignItems: 'center',
+    borderTopWidth: 4,
+    borderTopColor: '#10b981',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   summaryLabel: {
     fontSize: 16,
-    marginBottom: 8,
-    opacity: 0.7,
+    fontWeight: '500',
+    color: '#a0a0a0',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   summaryAmount: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
   },
   addButton: {
-    backgroundColor: '#00aa00',
+    backgroundColor: '#10b981',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    gap: 8,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    marginBottom: 24,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   addButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   addForm: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 24,
+    padding: 28,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   formTitle: {
-    marginBottom: 16,
+    marginBottom: 24,
     textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 10,
+    color: '#e0e0e0',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 2,
+    borderColor: '#333333',
+    borderRadius: 16,
+    padding: 16,
     fontSize: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#2a2a2a',
+    fontWeight: '500',
+    color: '#ffffff',
   },
   textArea: {
-    height: 80,
+    height: 100,
     textAlignVertical: 'top',
   },
   submitButton: {
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   submitButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#ffffff',
+    letterSpacing: -0.5,
   },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   categoryLeft: {
     flexDirection: 'row',
@@ -439,7 +518,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryIcon: {
-    marginRight: 12,
+    marginRight: 16,
   },
   categoryDetails: {
     flex: 1,
@@ -447,25 +526,35 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
+    color: '#ffffff',
   },
   categoryCount: {
-    fontSize: 12,
-    opacity: 0.6,
+    fontSize: 13,
+    color: '#a0a0a0',
+    fontWeight: '500',
   },
   categoryTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   transactionLeft: {
     flexDirection: 'row',
@@ -473,12 +562,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   transactionDetails: {
     flex: 1,
@@ -486,42 +575,63 @@ const styles = StyleSheet.create({
   transactionCategory: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
+    color: '#ffffff',
   },
   transactionDescription: {
     fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 2,
+    color: '#a0a0a0',
+    marginBottom: 4,
+    fontWeight: '500',
   },
   transactionDate: {
     fontSize: 12,
-    opacity: 0.6,
+    color: '#808080',
+    fontWeight: '500',
   },
   transactionRight: {
     alignItems: 'flex-end',
   },
   transactionAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   deleteButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#2d1b1b',
+    borderWidth: 1,
+    borderColor: '#4a2a2a',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 16,
+    marginBottom: 8,
+    color: '#ffffff',
   },
   emptySubtext: {
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: 15,
+    color: '#a0a0a0',
     textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 22,
   },
 });
+

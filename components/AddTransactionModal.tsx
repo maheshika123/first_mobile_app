@@ -1,8 +1,9 @@
+import CategoryDropdown from '@/components/CategoryDropdown';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ExpensesStorage } from '@/services/ExpensesStorage';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -33,8 +34,26 @@ export default function AddTransactionModal({
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
   const storage = ExpensesStorage.getInstance();
+
+  useEffect(() => {
+    if (visible) {
+      loadCategories();
+    }
+  }, [visible, type]);
+
+  const loadCategories = async () => {
+    await storage.loadData();
+    const categories = storage.getAllCategories(type);
+    setAvailableCategories(categories);
+  };
+
+  const handleAddCategory = async (newCategory: string) => {
+    // Add the new category to available categories
+    setAvailableCategories(prev => [...prev, newCategory].sort());
+  };
 
   const handleSubmit = async () => {
     if (!amount || !category) {
@@ -105,11 +124,13 @@ export default function AddTransactionModal({
 
           <ThemedView style={styles.inputGroup}>
             <ThemedText style={styles.label}>Category</ThemedText>
-            <TextInput
-              style={styles.input}
+            <CategoryDropdown
               value={category}
-              onChangeText={setCategory}
+              onValueChange={setCategory}
               placeholder={type === 'income' ? 'e.g., Salary, Freelance' : 'e.g., Groceries, Rent'}
+              categories={availableCategories}
+              onAddCategory={handleAddCategory}
+              type={type}
             />
           </ThemedView>
 

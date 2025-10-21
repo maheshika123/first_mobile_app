@@ -94,4 +94,21 @@ export class ExpensesStorage {
     const monthlyData = this.getMonthlyData(year, month);
     return monthlyData.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
+
+  getAllCategories(type?: 'income' | 'expense'): string[] {
+    const allTransactions = this.data.monthlyData.flatMap(m => m.transactions);
+    const filteredTransactions = type 
+      ? allTransactions.filter(t => t.type === type)
+      : allTransactions;
+    
+    const categories = filteredTransactions.map(t => t.category);
+    const uniqueCategories = [...new Set(categories)];
+    return uniqueCategories.sort();
+  }
+
+  async addCategory(category: string): Promise<void> {
+    // Categories are automatically added when transactions are created
+    // This method exists for future extensibility if we want to pre-define categories
+    await this.saveData();
+  }
 }
